@@ -75,13 +75,14 @@ class MedicalApp:
         return btn
 
     def main_menu(self):
-        self.clear_window()
-        tk.Label(self.root, text="Welcome to Medical Appointment System", 
-                font=("Arial", 16)).pack(pady=20)
-        
-        self.create_button(self.root, "Login", self.login_screen)
-        self.create_button(self.root, "Register as Patient", self.register_patient_screen)
-        self.create_button(self.root, "Register as Doctor", self.register_doctor_screen)
+     self.clear_window()
+     tk.Label(self.root, text="Welcome to Medical Appointment System", 
+            font=("Arial", 16)).pack(pady=20)
+    
+     self.create_button(self.root, "Login", self.login_screen)
+     self.create_button(self.root, "Register as Patient", lambda: self.register_screen("patient"))
+     self.create_button(self.root, "Register as Doctor", lambda: self.register_screen("doctor"))
+
 
     # -------------------- Registration Refactoring --------------------
     def register_screen(self, role):
