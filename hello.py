@@ -1,8 +1,15 @@
+# hello.py
 import tkinter as tk
 from tkinter import messagebox, ttk
 from tkcalendar import Calendar
 import sqlite3
 from contextlib import contextmanager
+import bcrypt # Added for password hashing
+import logging # Added for logging
+
+# Configure logging
+logging.basicConfig(filename='medical_app.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # -------------------- Database Refactoring --------------------
 class DatabaseManager:
@@ -21,6 +28,7 @@ class DatabaseManager:
             conn.commit()
         except Exception as e:
             conn.rollback()
+            logging.error(f"Database error: {e}")
             raise e
         finally:
             conn.close()
@@ -80,8 +88,8 @@ class MedicalApp:
                 font=("Arial", 16)).pack(pady=20)
         
         self.create_button(self.root, "Login", self.login_screen)
-        self.create_button(self.root, "Register as Patient", self.register_patient_screen)
-        self.create_button(self.root, "Register as Doctor", self.register_doctor_screen)
+        self.create_button(self.root, "Register as Patient", lambda: self.register_screen("patient"))
+        self.create_button(self.root, "Register as Doctor", lambda: self.register_screen("doctor"))
 
     # -------------------- Registration Refactoring --------------------
     def register_screen(self, role):
@@ -93,18 +101,31 @@ class MedicalApp:
         password_entry = self.create_form_field(self.root, "Password", show="*")
 
         def register():
-            username = username_entry.get()
-            password = password_entry.get()
+            username = username_entry.get().strip()
+            password = password_entry.get().strip()
             
+            # Input Validation
+            if not username or not password:
+                messagebox.showerror("Error", "Username and password cannot be empty.")
+                logging.warning(f"Registration attempt with empty fields for role: {role}")
+                return
+
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
             try:
                 with self.db.get_cursor() as c:
                     table = "patients" if role == "patient" else "doctors"
                     c.execute(f"INSERT INTO {table} (username, password) VALUES (?, ?)", 
-                             (username, password))
+                             (username, hashed_password))
                 messagebox.showinfo("Success", f"{role.capitalize()} registration successful!")
+                logging.info(f"Successful registration for {role}: {username}")
                 self.main_menu()
             except sqlite3.IntegrityError:
                 messagebox.showerror("Error", "Username already exists")
+                logging.warning(f"Registration failed: Username '{username}' already exists for role: {role}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Registration failed: {str(e)}")
+                logging.error(f"Registration error for {role}: {e}")
 
         self.create_button(self.root, "Register", register)
         self.create_button(self.root, "Back", self.main_menu)
@@ -123,23 +144,34 @@ class MedicalApp:
         password_entry = self.create_form_field(self.root, "Password", show="*")
 
         def login():
-            username = username_entry.get()
-            password = password_entry.get()
+            username = username_entry.get().strip()
+            password = password_entry.get().strip()
             role = role_var.get()
+
+            # Input Validation
+            if not username or not password:
+                messagebox.showerror("Error", "Username and password cannot be empty.")
+                logging.warning(f"Login attempt with empty fields for role: {role}")
+                return
 
             try:
                 with self.db.get_cursor() as c:
                     table = "patients" if role == "patient" else "doctors"
-                    c.execute(f"SELECT * FROM {table} WHERE username = ? AND password = ?", 
-                             (username, password))
-                    if c.fetchone():
+                    c.execute(f"SELECT password FROM {table} WHERE username = ?", (username,))
+                    user_data = c.fetchone()
+
+                    if user_data and bcrypt.checkpw(password.encode('utf-8'), user_data[0].encode('utf-8')):
                         self.current_user = username
                         self.user_role = role
+                        messagebox.showinfo("Success", f"Logged in as {username} ({role})")
+                        logging.info(f"Successful login for {role}: {username}")
                         self.dashboard() if role == "patient" else self.doctor_dashboard()
                     else:
                         messagebox.showerror("Error", "Invalid credentials")
+                        logging.warning(f"Failed login attempt for {role}: {username}")
             except Exception as e:
                 messagebox.showerror("Error", f"Login failed: {str(e)}")
+                logging.error(f"Login error for {role}: {e}")
 
         self.create_button(self.root, "Login", login)
         self.create_button(self.root, "Back", self.main_menu)
@@ -154,6 +186,7 @@ class MedicalApp:
         self.create_button(self.root, "View My Appointments", self.view_my_appointments)
         self.create_button(self.root, "Search by Doctor/Date", self.search_appointments)
         self.create_button(self.root, "Logout", self.main_menu)
+        logging.info(f"Patient dashboard loaded for: {self.current_user}")
 
     # -------------------- Appointment Booking Refactoring --------------------
     def book_appointment(self):
@@ -163,9 +196,15 @@ class MedicalApp:
         # Doctor selection
         tk.Label(self.root, text="Select Doctor").pack()
         doctor_combo = ttk.Combobox(self.root, state="readonly")
-        with self.db.get_cursor() as c:
-            c.execute("SELECT username FROM doctors")
-            doctor_combo["values"] = [row[0] for row in c.fetchall()]
+        try:
+            with self.db.get_cursor() as c:
+                c.execute("SELECT username FROM doctors")
+                doctor_combo["values"] = [row[0] for row in c.fetchall()]
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load doctors: {str(e)}")
+            logging.error(f"Error loading doctors for appointment booking: {e}")
+            self.dashboard()
+            return
         doctor_combo.pack()
 
         # Date selection
@@ -177,12 +216,14 @@ class MedicalApp:
         time_entry = self.create_form_field(self.root, "Time (e.g., 10:00 AM)")
 
         def save():
-            doctor = doctor_combo.get()
+            doctor = doctor_combo.get().strip()
             date = cal.get_date()
-            time = time_entry.get()
+            time = time_entry.get().strip()
             
+            # Input Validation
             if not all([doctor, date, time]):
-                messagebox.showerror("Error", "All fields required")
+                messagebox.showerror("Error", "All fields are required to book an appointment.")
+                logging.warning(f"Attempt to book appointment with missing fields by {self.current_user}")
                 return
 
             try:
@@ -192,9 +233,11 @@ class MedicalApp:
                                VALUES (?, ?, ?, ?)''',
                              (self.current_user, doctor, date, time))
                 messagebox.showinfo("Success", "Appointment booked successfully!")
+                logging.info(f"Appointment booked by {self.current_user} with Dr. {doctor} on {date} at {time}")
                 self.dashboard()
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to book appointment: {str(e)}")
+                logging.error(f"Error booking appointment for {self.current_user}: {e}")
 
         self.create_button(self.root, "Save Appointment", save)
         self.create_button(self.root, "Back", self.dashboard)
@@ -208,15 +251,23 @@ class MedicalApp:
         tree = ttk.Treeview(self.root, columns=("ID", "Doctor", "Date", "Time"), show='headings')
         for col in tree["columns"]:
             tree.heading(col, text=col)
-        tree.pack()
+            tree.column(col, width=150) # Added width for better display
+        tree.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
         # Populate appointments
-        with self.db.get_cursor() as c:
-            c.execute('''SELECT id, doctor, date, time 
-                        FROM appointments 
-                        WHERE patient_username = ?''', (self.current_user,))
-            for row in c.fetchall():
-                tree.insert('', 'end', values=row)
+        try:
+            with self.db.get_cursor() as c:
+                c.execute('''SELECT id, doctor, date, time 
+                            FROM appointments 
+                            WHERE patient_username = ?''', (self.current_user,))
+                for row in c.fetchall():
+                    tree.insert('', 'end', values=row)
+            logging.info(f"Viewing appointments for patient: {self.current_user}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load appointments: {str(e)}")
+            logging.error(f"Error loading appointments for patient {self.current_user}: {e}")
+            self.dashboard()
+            return
 
         # Appointment management buttons
         self.create_button(self.root, "Delete Appointment", 
@@ -229,21 +280,27 @@ class MedicalApp:
         """Handle appointment deletion"""
         selected = tree.selection()
         if not selected:
+            messagebox.showerror("Error", "Please select an appointment to delete.")
+            logging.warning(f"Delete appointment attempt without selection by {self.current_user}")
             return
             
         appointment_id = tree.item(selected[0])['values'][0]
         try:
             with self.db.get_cursor() as c:
                 c.execute("DELETE FROM appointments WHERE id = ?", (appointment_id,))
-            messagebox.showinfo("Deleted", "Appointment deleted")
-            self.view_my_appointments()
+            messagebox.showinfo("Deleted", "Appointment deleted successfully.")
+            logging.info(f"Appointment ID {appointment_id} deleted by {self.current_user}")
+            self.view_my_appointments() # Refresh the view
         except Exception as e:
             messagebox.showerror("Error", f"Failed to delete appointment: {str(e)}")
+            logging.error(f"Error deleting appointment ID {appointment_id} by {self.current_user}: {e}")
 
     def _reschedule_appointment(self, tree):
         """Handle appointment rescheduling"""
         selected = tree.selection()
         if not selected:
+            messagebox.showerror("Error", "Please select an appointment to reschedule.")
+            logging.warning(f"Reschedule appointment attempt without selection by {self.current_user}")
             return
             
         appointment_id = tree.item(selected[0])['values'][0]
@@ -254,25 +311,34 @@ class MedicalApp:
         cal = Calendar(top, selectmode='day')
         cal.pack(pady=5)
 
-        new_time_entry = self.create_form_field(top, "New Time")
+        new_time_entry = self.create_form_field(top, "New Time (e.g., 02:30 PM)")
 
         def update():
             new_date = cal.get_date()
-            new_time = new_time_entry.get()
+            new_time = new_time_entry.get().strip()
             
+            # Input Validation
+            if not new_date or not new_time:
+                messagebox.showerror("Error", "New date and time are required.")
+                logging.warning(f"Attempt to reschedule appointment ID {appointment_id} with missing fields.")
+                return
+
             try:
                 with self.db.get_cursor() as c:
                     c.execute('''UPDATE appointments 
                                SET date = ?, time = ? 
                                WHERE id = ?''', 
                              (new_date, new_time, appointment_id))
-                messagebox.showinfo("Success", "Appointment rescheduled")
+                messagebox.showinfo("Success", "Appointment rescheduled successfully.")
+                logging.info(f"Appointment ID {appointment_id} rescheduled by {self.current_user} to {new_date} at {new_time}")
                 top.destroy()
-                self.view_my_appointments()
+                self.view_my_appointments() # Refresh the view
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to reschedule: {str(e)}")
+                logging.error(f"Error rescheduling appointment ID {appointment_id} by {self.current_user}: {e}")
 
         self.create_button(top, "Update", update)
+        self.create_button(top, "Cancel", top.destroy) # Added cancel button
 
     # -------------------- Search Functionality --------------------
     def search_appointments(self):
@@ -284,22 +350,30 @@ class MedicalApp:
         tree = ttk.Treeview(self.root, columns=("Doctor", "Date", "Time"), show='headings')
         for col in tree["columns"]:
             tree.heading(col, text=col)
-        tree.pack()
+            tree.column(col, width=180) # Adjusted width
+        tree.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
         def search():
-            value = search_entry.get()
+            value = search_entry.get().strip()
             tree.delete(*tree.get_children())
             
+            if not value:
+                messagebox.showwarning("Warning", "Please enter a search term.")
+                logging.warning(f"Search appointment attempt with empty search term by {self.current_user}")
+                return
+
             try:
                 with self.db.get_cursor() as c:
                     c.execute('''SELECT doctor, date, time 
                                FROM appointments 
-                               WHERE doctor LIKE ? OR date = ?''',
-                             (f"%{value}%", value))
+                               WHERE (doctor LIKE ? OR date = ?) AND patient_username = ?''', # Added patient filter
+                             (f"%{value}%", value, self.current_user))
                     for row in c.fetchall():
                         tree.insert('', 'end', values=row)
+                logging.info(f"Appointments searched by {self.current_user} for term: '{value}'")
             except Exception as e:
                 messagebox.showerror("Error", f"Search failed: {str(e)}")
+                logging.error(f"Error during appointment search by {self.current_user} for '{value}': {e}")
 
         self.create_button(self.root, "Search", search)
         self.create_button(self.root, "Back", self.dashboard)
@@ -313,18 +387,45 @@ class MedicalApp:
         tree = ttk.Treeview(self.root, columns=("ID", "Patient", "Date", "Time"), show='headings')
         for col in tree["columns"]:
             tree.heading(col, text=col)
-        tree.pack()
+            tree.column(col, width=150) # Added width for better display
+        tree.pack(pady=10, padx=10, fill=tk.BOTH, expand=True)
 
-        with self.db.get_cursor() as c:
-            c.execute('''SELECT id, patient_username, date, time 
-                        FROM appointments 
-                        WHERE doctor = ?''', (self.current_user,))
-            for row in c.fetchall():
-                tree.insert('', 'end', values=row)
+        try:
+            with self.db.get_cursor() as c:
+                c.execute('''SELECT id, patient_username, date, time 
+                            FROM appointments 
+                            WHERE doctor = ?''', (self.current_user,))
+                for row in c.fetchall():
+                    tree.insert('', 'end', values=row)
+            logging.info(f"Doctor dashboard loaded for: {self.current_user}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to load appointments for doctor: {str(e)}")
+            logging.error(f"Error loading appointments for doctor {self.current_user}: {e}")
+            self.main_menu()
+            return
 
         self.create_button(self.root, "Delete Appointment", 
-                         lambda: self._delete_appointment(tree))
+                         lambda: self._delete_appointment_doctor_view(tree)) # Separate delete for doctor view
         self.create_button(self.root, "Logout", self.main_menu)
+
+    def _delete_appointment_doctor_view(self, tree):
+        """Handle appointment deletion from doctor's view"""
+        selected = tree.selection()
+        if not selected:
+            messagebox.showerror("Error", "Please select an appointment to delete.")
+            logging.warning(f"Delete appointment attempt without selection by doctor {self.current_user}")
+            return
+            
+        appointment_id = tree.item(selected[0])['values'][0]
+        try:
+            with self.db.get_cursor() as c:
+                c.execute("DELETE FROM appointments WHERE id = ?", (appointment_id,))
+            messagebox.showinfo("Deleted", "Appointment deleted successfully.")
+            logging.info(f"Appointment ID {appointment_id} deleted by doctor {self.current_user}")
+            self.doctor_dashboard() # Refresh the view
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to delete appointment: {str(e)}")
+            logging.error(f"Error deleting appointment ID {appointment_id} by doctor {self.current_user}: {e}")
 
 # -------------------- Run Application --------------------
 if __name__ == "__main__":
