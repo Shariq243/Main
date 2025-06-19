@@ -10,7 +10,7 @@ import logging # Added for logging
 logging.basicConfig(filename='medical_app.log', level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
-# --- Shared Database Manager ---
+# --- Shared Database Manager Section ---
 class DatabaseManager:
     """Centralized database management with context manager"""
     def __init__(self, db_name="medical_appointments.db"):
@@ -52,16 +52,17 @@ class DatabaseManager:
                         date TEXT,
                         time TEXT)''')
 
-# --- Medical Application (Patient/Doctor) Class ---
+# --- Medical Application (Patient/Doctor) Class Section ---
 class MedicalApp:
-    def __init__(self, root, db_manager_instance): # Now accepts db_manager_instance
+    def __init__(self, root, db_manager_instance):
         self.root = root
         self.root.title("Medical Appointment System")
         self.current_user = None
         self.user_role = None  # "patient" or "doctor"
-        self.db = db_manager_instance  # Use the passed DatabaseManager instance
+        self.db = db_manager_instance
         self.main_menu()
 
+    # --- UI Utility Methods Section ---
     def clear_window(self):
         """Clear all widgets from the root window"""
         for widget in self.root.winfo_children():
@@ -80,6 +81,7 @@ class MedicalApp:
         btn.pack(pady=pady)
         return btn
 
+    # --- Main Menu Section ---
     def main_menu(self):
         self.clear_window()
         tk.Label(self.root, text="Welcome to Medical Appointment System", 
@@ -89,6 +91,7 @@ class MedicalApp:
         self.create_button(self.root, "Register as Patient", lambda: self.register_screen("patient"))
         self.create_button(self.root, "Register as Doctor", lambda: self.register_screen("doctor"))
 
+    # --- Registration Section ---
     def register_screen(self, role):
         self.clear_window()
         tk.Label(self.root, text=f"Register as {role.capitalize()}", 
@@ -127,6 +130,7 @@ class MedicalApp:
         self.create_button(self.root, "Register", register)
         self.create_button(self.root, "Back", self.main_menu)
 
+    # --- Login Section ---
     def login_screen(self):
         self.clear_window()
         tk.Label(self.root, text="Login", font=("Arial", 16)).pack(pady=10)
@@ -172,6 +176,7 @@ class MedicalApp:
         self.create_button(self.root, "Login", login)
         self.create_button(self.root, "Back", self.main_menu)
 
+    # --- Patient Dashboard Section ---
     def dashboard(self):
         self.clear_window()
         tk.Label(self.root, text=f"Welcome, {self.current_user}", 
@@ -183,6 +188,7 @@ class MedicalApp:
         self.create_button(self.root, "Logout", self.main_menu)
         logging.info(f"Patient dashboard loaded for: {self.current_user}")
 
+    # --- Book Appointment Section ---
     def book_appointment(self):
         self.clear_window()
         tk.Label(self.root, text="Book Appointment", font=("Arial", 14)).pack(pady=10)
@@ -232,6 +238,7 @@ class MedicalApp:
         self.create_button(self.root, "Save Appointment", save)
         self.create_button(self.root, "Back", self.dashboard)
 
+    # --- View My Appointments Section (Patient) ---
     def view_my_appointments(self):
         self.clear_window()
         tk.Label(self.root, text="My Appointments", font=("Arial", 14)).pack(pady=10)
@@ -262,6 +269,7 @@ class MedicalApp:
                          lambda: self._reschedule_appointment(tree))
         self.create_button(self.root, "Back", self.dashboard)
 
+    # --- Delete Appointment Method (Patient) ---
     def _delete_appointment(self, tree):
         """Handle appointment deletion"""
         selected = tree.selection()
@@ -281,6 +289,7 @@ class MedicalApp:
             messagebox.showerror("Error", f"Failed to delete appointment: {str(e)}")
             logging.error(f"Error deleting appointment ID {appointment_id} by {self.current_user}: {e}")
 
+    # --- Reschedule Appointment Method (Patient) ---
     def _reschedule_appointment(self, tree):
         """Handle appointment rescheduling"""
         selected = tree.selection()
@@ -325,6 +334,7 @@ class MedicalApp:
         self.create_button(top, "Update", update)
         self.create_button(top, "Cancel", top.destroy)
 
+    # --- Search Appointments Section (Patient) ---
     def search_appointments(self):
         self.clear_window()
         tk.Label(self.root, text="Search Appointments", font=("Arial", 14)).pack(pady=10)
@@ -362,6 +372,7 @@ class MedicalApp:
         self.create_button(self.root, "Search", search)
         self.create_button(self.root, "Back", self.dashboard)
 
+    # --- Doctor Dashboard Section ---
     def doctor_dashboard(self):
         self.clear_window()
         tk.Label(self.root, text=f"Doctor Dashboard - Dr. {self.current_user}", 
@@ -391,6 +402,7 @@ class MedicalApp:
                          lambda: self._delete_appointment_doctor_view(tree))
         self.create_button(self.root, "Logout", self.main_menu)
 
+    # --- Delete Appointment Method (Doctor's View) ---
     def _delete_appointment_doctor_view(self, tree):
         """Handle appointment deletion from doctor's view"""
         selected = tree.selection()
@@ -410,19 +422,21 @@ class MedicalApp:
             messagebox.showerror("Error", f"Failed to delete appointment: {str(e)}")
             logging.error(f"Error deleting appointment ID {appointment_id} by doctor {self.current_user}: {e}")
 
-# --- Admin System Class ---
+# --- Admin System Class Section ---
 class AdminSystem:
-    def __init__(self, root, db_manager_instance): # Now accepts db_manager_instance
+    def __init__(self, root, db_manager_instance):
         self.root = root
         self.root.title("Admin Dashboard")
-        self.db = db_manager_instance # Use the passed DatabaseManager instance
+        self.db = db_manager_instance
         self.setup_ui()
         
+    # --- UI Utility Methods (Admin) Section ---
     def clear_window(self):
         """Clear all widgets from the window"""
         for widget in self.root.winfo_children():
             widget.destroy()
     
+    # --- Admin Main Interface Setup Section ---
     def setup_ui(self):
         """Set up the main admin interface"""
         self.clear_window()
@@ -439,6 +453,7 @@ class AdminSystem:
             tk.Button(self.root, text=text, command=command, width=20).pack(pady=5)
         logging.info("Admin dashboard loaded.")
     
+    # --- Manage Patients Section (Admin) ---
     def manage_patients(self):
         """Manage patient accounts"""
         self.clear_window()
@@ -458,6 +473,7 @@ class AdminSystem:
         tk.Button(self.root, text="Back", command=self.setup_ui).pack(pady=5)
         logging.info("Manage Patients screen loaded.")
     
+    # --- Load Patients Method (Admin) ---
     def load_patients(self, tree):
         """Load patient data into treeview"""
         tree.delete(*tree.get_children())
@@ -471,6 +487,7 @@ class AdminSystem:
             messagebox.showerror("Error", f"Failed to load patient data: {str(e)}")
             logging.error(f"Admin error loading patient data: {e}")
     
+    # --- Manage Doctors Section (Admin) ---
     def manage_doctors(self):
         """Manage doctor accounts"""
         self.clear_window()
@@ -510,6 +527,7 @@ class AdminSystem:
         tk.Button(self.root, text="Back", command=self.setup_ui).pack(pady=5)
         logging.info("Manage Doctors screen loaded.")
     
+    # --- Load Doctors Method (Admin) ---
     def load_doctors(self, tree):
         """Load doctor data into treeview"""
         tree.delete(*tree.get_children())
@@ -523,6 +541,7 @@ class AdminSystem:
             messagebox.showerror("Error", f"Failed to load doctor data: {str(e)}")
             logging.error(f"Admin error loading doctor data: {e}")
     
+    # --- Manage Appointments Section (Admin) ---
     def manage_appointments(self):
         """Manage all appointments"""
         self.clear_window()
@@ -541,6 +560,7 @@ class AdminSystem:
         tk.Button(self.root, text="Back", command=self.setup_ui).pack(pady=5)
         logging.info("Manage Appointments screen loaded.")
     
+    # --- Load Appointments Method (Admin) ---
     def load_appointments(self, tree):
         """Load appointment data into treeview"""
         tree.delete(*tree.get_children())
@@ -554,6 +574,7 @@ class AdminSystem:
             messagebox.showerror("Error", f"Failed to load appointment data: {str(e)}")
             logging.error(f"Admin error loading appointment data: {e}")
     
+    # --- Add Doctor Method (Admin) ---
     def add_doctor(self, username, password, tree):
         """Add a new doctor account"""
         username = username.strip()
@@ -580,6 +601,7 @@ class AdminSystem:
             messagebox.showerror("Error", f"Failed to add doctor: {str(e)}")
             logging.error(f"Error adding doctor '{username}': {e}")
     
+    # --- Delete Record Method (Admin) ---
     def delete_record(self, tree, table):
         """Delete a selected record from the database"""
         selected = tree.selection()
@@ -607,7 +629,8 @@ class AdminSystem:
             messagebox.showerror("Error", f"Failed to delete record: {str(e)}")
             logging.error(f"Error deleting record ID {record_id} from '{table}': {e}")
 
-# --- Main Application Launcher ---
+
+# --- Main Application Launcher Section ---
 if __name__ == "__main__":
     # Initialize the DatabaseManager once for the entire application
     db_manager = DatabaseManager() 
@@ -620,6 +643,7 @@ if __name__ == "__main__":
 
     tk.Label(main_launcher_root, text="Select Your Application Role", font=("Arial", 14)).pack(pady=30)
 
+    # --- Launch Patient/Doctor App Function ---
     def launch_patient_doctor_app():
         main_launcher_root.destroy()
         app_root = tk.Tk()
@@ -628,6 +652,7 @@ if __name__ == "__main__":
         MedicalApp(app_root, db_manager) # Pass the shared db_manager instance
         app_root.mainloop()
 
+    # --- Launch Admin Login Process Function ---
     def launch_admin_login_process():
         main_launcher_root.destroy()
         
@@ -650,10 +675,10 @@ if __name__ == "__main__":
         password_entry.grid(row=1, column=1, padx=5)
         
         ADMIN_USERNAME = "admin"
-        # IMPORTANT: In a real application, you would generate this hash ONCE
-        # (e.g., by running a script to hash "admin123") and then hardcode the
-        # resulting hash string here. For this demo, we'll hash a plain string.
-        ADMIN_PASSWORD_PLAIN_FOR_DEMO = "admin123" 
+        # Hashed password for "admin123" - GENERATED ONCE AND STORED HERE
+        # IMPORTANT: Replace the placeholder hash below with the actual hash generated
+        # by running the bcrypt hash generation script on your system.
+        ADMIN_PASSWORD_HASH = b'$2b$12$zHzY88X5SIJ3qAVLgNgldeETJC4MetiJg0qPs6jJt63/dOPc07Koi' 
 
         def perform_admin_login():
             entered_username = username_entry.get().strip()
@@ -664,10 +689,8 @@ if __name__ == "__main__":
                 logging.warning("Admin login attempt with empty fields.")
                 return
 
-            # Compare entered password against the plain text 'admin123' used for demo purposes.
-            # For production, compare against a pre-generated hash stored in ADMIN_PASSWORD_HASH.
             if entered_username == ADMIN_USERNAME and \
-               bcrypt.checkpw(entered_password.encode('utf-8'), ADMIN_PASSWORD_PLAIN_FOR_DEMO.encode('utf-8')): 
+               bcrypt.checkpw(entered_password.encode('utf-8'), ADMIN_PASSWORD_HASH): # No .encode() on ADMIN_PASSWORD_HASH as it's already bytes
                 admin_login_root.destroy()
                 admin_root = tk.Tk()
                 admin_root.geometry("800x600")
@@ -682,6 +705,7 @@ if __name__ == "__main__":
         tk.Button(admin_login_root, text="Login", command=perform_admin_login).pack(pady=10)
         admin_login_root.mainloop()
 
+    # --- Main Launcher Buttons Section ---
     tk.Button(main_launcher_root, text="Patient / Doctor Application", command=launch_patient_doctor_app, width=30).pack(pady=10)
     tk.Button(main_launcher_root, text="Admin Panel Login", command=launch_admin_login_process, width=30).pack(pady=10)
 

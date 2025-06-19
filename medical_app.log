@@ -1,2 +1,53 @@
 2025-06-08 18:09:40,844 - INFO - Application initialized
 2025-06-08 18:09:53,239 - INFO - Application initialized
+2025-06-19 16:47:48,329 - ERROR - Database error: Invalid salt
+2025-06-19 16:47:49,864 - ERROR - Login error for patient: Invalid salt
+2025-06-19 16:48:00,356 - ERROR - Database error: UNIQUE constraint failed: patients.username
+2025-06-19 16:48:01,802 - WARNING - Registration failed: Username 'shariq' already exists for role: patient
+2025-06-19 16:48:14,647 - INFO - Successful registration for patient: hamza
+2025-06-19 16:48:31,668 - INFO - Successful login for patient: hamza
+2025-06-19 16:48:31,707 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 16:48:48,501 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 16:49:01,929 - INFO - Successful registration for doctor: ali
+2025-06-19 16:49:10,642 - ERROR - Database error: UNIQUE constraint failed: doctors.username
+2025-06-19 16:49:12,099 - WARNING - Registration failed: Username 'ali' already exists for role: doctor
+2025-06-19 16:49:30,786 - INFO - Successful login for doctor: ali
+2025-06-19 16:49:30,814 - INFO - Doctor dashboard loaded for: ali
+2025-06-19 16:49:57,692 - INFO - Successful login for patient: hamza
+2025-06-19 16:49:57,728 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 16:50:49,581 - INFO - Appointment booked by hamza with Dr. ali on 6/26/25 at 07:00AM
+2025-06-19 16:50:49,824 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 16:50:52,472 - INFO - Viewing appointments for patient: hamza
+2025-06-19 16:50:56,949 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 16:51:04,518 - INFO - Appointments searched by hamza for term: 'ali'
+2025-06-19 16:51:06,369 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 16:51:20,487 - ERROR - Database error: UNIQUE constraint failed: doctors.username
+2025-06-19 16:51:21,945 - WARNING - Registration failed: Username 'ali' already exists for role: doctor
+2025-06-19 16:51:37,493 - INFO - Successful login for doctor: ali
+2025-06-19 16:51:37,527 - INFO - Doctor dashboard loaded for: ali
+2025-06-19 17:07:07,978 - WARNING - Failed admin login attempt for username: 'admin'.
+2025-06-19 17:07:47,233 - WARNING - Failed admin login attempt for username: 'admin'.
+2025-06-19 17:07:55,778 - WARNING - Failed admin login attempt for username: 'admin'.
+2025-06-19 17:24:41,951 - INFO - Admin dashboard loaded.
+2025-06-19 17:24:57,205 - INFO - Patient data loaded into treeview for admin.
+2025-06-19 17:24:57,206 - INFO - Manage Patients screen loaded.
+2025-06-19 17:24:59,895 - INFO - Admin dashboard loaded.
+2025-06-19 17:25:00,684 - INFO - Doctor data loaded into treeview for admin.
+2025-06-19 17:25:00,686 - INFO - Manage Doctors screen loaded.
+2025-06-19 17:25:06,866 - INFO - Admin dashboard loaded.
+2025-06-19 17:25:07,913 - INFO - Appointment data loaded into treeview for admin.
+2025-06-19 17:25:07,914 - INFO - Manage Appointments screen loaded.
+2025-06-19 17:25:09,464 - INFO - Admin dashboard loaded.
+2025-06-19 17:25:13,063 - INFO - Admin 'admin' successfully logged in.
+2025-06-19 18:24:51,079 - INFO - Successful login for patient: hamza
+2025-06-19 18:24:51,084 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 18:45:17,996 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 18:45:21,067 - INFO - Viewing appointments for patient: hamza
+2025-06-19 18:45:25,366 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 19:09:41,053 - INFO - Viewing appointments for patient: hamza
+2025-06-19 19:10:01,927 - WARNING - Reschedule appointment attempt without selection by hamza
+2025-06-19 19:10:08,159 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 19:39:32,852 - INFO - Successful login for patient: hamza
+2025-06-19 19:39:32,858 - INFO - Patient dashboard loaded for: hamza
+2025-06-19 19:39:49,504 - INFO - Successful login for doctor: ali
+2025-06-19 19:39:49,513 - INFO - Doctor dashboard loaded for: ali
